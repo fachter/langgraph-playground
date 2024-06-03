@@ -8,7 +8,6 @@ langgraph
 tavily-python
 gpt4all
 jupyter
-fastapi
 psycopg2-binary
 pgvector
 psycopg[binary,pool]
@@ -16,3 +15,15 @@ langchain-huggingface
 langchain-postgres
 langchain-cohere
 sentence-transformers
+
+python-dotenv
+python-multipart
+email_validator
+fastapi
+uvicorn
+passlib
+bcrypt
+pydantic
+cryptography
+python-jose
+sqlalchemy
