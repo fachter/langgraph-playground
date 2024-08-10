@@ -11,10 +11,17 @@ jupyter
 psycopg2-binary
 pgvector
 psycopg[binary,pool]
+
 langchain-huggingface
+langchain-core
+langchain-ollama
+langchain-chroma
 langchain-postgres
 langchain-cohere
 sentence-transformers
+
+playwright
+unstructured
 
 python-dotenv
 python-multipart

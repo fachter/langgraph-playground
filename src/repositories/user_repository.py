@@ -19,4 +19,3 @@ class UserRepository:
         self._db.commit()
         self._db.refresh(user)
         return user
-
