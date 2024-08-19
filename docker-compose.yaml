@@ -1,6 +1,6 @@
 services:
   db:
-    image: pgvector/pgvector:pg16
+    image: ankane/pgvector
     environment:
       POSTGRES_USERNAME: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -9,6 +9,7 @@ services:
       - "${DB_PORT}:5432"
     volumes:
       - rag_demo_data:/var/lib/postgresql/data
+      - ./pgvector/init.sql:/docker-entrypoint-initdb.d/init.sql
 
 volumes:
   rag_demo_data:
