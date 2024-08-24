@@ -11,12 +11,14 @@ jupyter
 psycopg2-binary
 pgvector
 psycopg[binary,pool]
+psycopg-pool
 
 langchain-huggingface
 langchain-core
 langchain-ollama
 langchain-chroma
 langchain-postgres
+langgraph-checkpoint-postgres
 langchain-cohere
 sentence-transformers
 
