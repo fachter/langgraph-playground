@@ -3,10 +3,12 @@ from typing import Annotated, Sequence, TypedDict
 
 from langchain_core.messages import BaseMessage, AIMessage, HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.constants import START
 from langgraph.graph import StateGraph, END
 from pydantic.v1 import BaseModel
-from torch.cuda import graph
+
+from src.repositories import connection_string
 
 
 class MyState(BaseModel):
@@ -14,7 +16,7 @@ class MyState(BaseModel):
     messages: Annotated[Sequence[BaseMessage], operator.add] = []
 
 
-def start_step(state: MyState):
+def start_step(_state: MyState):
     print("---Step 1---")
     return {"step": 1}
 
@@ -27,7 +29,7 @@ def display_step(state: MyState):
     }
 
 
-def human_in_the_loop(state: MyState):
+def human_in_the_loop(_state: MyState):
     print("---Human In The Loop---")
     return {"step": 3}
 
@@ -43,6 +45,11 @@ def last_step(state: MyState):
     print(state)
     return {"step": state.step + 1}
 
+
+def get_checkpointer():
+    with PostgresSaver.from_conn_string(connection_string) as checkpointer:
+        yield checkpointer
+
 def main():
     graph_builder = StateGraph(MyState)
     graph_builder.add_node("start", start_step)
@@ -57,51 +64,52 @@ def main():
         "human_in_the_loop", determine_finished, {False: "display", True: "last_step"}
     )
     graph_builder.add_edge("last_step", END)
-    checkpointer = MemorySaver()
-    my_graph = graph_builder.compile(
-        interrupt_before=["human_in_the_loop"], checkpointer=checkpointer
-    )
-    thread_config = {"configurable": {"thread_id": "1"}}
+    with PostgresSaver.from_conn_string(connection_string) as checkpointer:
+        checkpointer.setup()
+        my_graph = graph_builder.compile(
+            interrupt_before=["human_in_the_loop"], checkpointer=checkpointer
+        )
+        thread_config = {"configurable": {"thread_id": "2"}}
 
-    for event in my_graph.stream({"step": -1}, thread_config, stream_mode="values"):
-        print(event)
+        for event in my_graph.stream({"step": -1}, thread_config, stream_mode="values"):
+            print(event)
 
-    for event in my_graph.stream(
-            {"messages": [HumanMessage("This will restart the graph from first step")]}, # ALWAYS PASS NONE and update state before
+        for event in my_graph.stream(
+                {"messages": [HumanMessage("This will restart the graph from first step")]}, # ALWAYS PASS NONE and update state before
+                thread_config,
+                stream_mode="values",
+        ):
+            print(event)
+        my_graph.update_state(thread_config, {"messages": [HumanMessage("This will continue in step 2")]})
+        for event in my_graph.stream(
+            None,
             thread_config,
             stream_mode="values",
-    ):
-        print(event)
-    my_graph.update_state(thread_config, {"messages": [HumanMessage("This will continue in step 2")]})
-    for event in my_graph.stream(
-        None,
-        thread_config,
-        stream_mode="values",
-    ):
-        print(event)
-    my_graph.update_state(thread_config, {"messages": [HumanMessage("END")]})
-    for event in my_graph.stream(
-        None, thread_config, stream_mode="values"
-    ):
-        print(event)
-    print(my_graph.get_state(thread_config))
+        ):
+            print(event)
+        my_graph.update_state(thread_config, {"messages": [HumanMessage("END")]})
+        for event in my_graph.stream(
+            None, thread_config, stream_mode="values"
+        ):
+            print(event)
+        print(my_graph.get_state(thread_config))
 
 
 class State(TypedDict):
     input: str
 
 
-def step_1(state):
+def step_1(_state):
     print("---Step 1---")
     pass
 
 
-def step_2(state):
+def step_2(_state):
     print("---Step 2---")
     pass
 
 
-def step_3(state):
+def step_3(_state):
     print("---Step 3---")
     pass
 
