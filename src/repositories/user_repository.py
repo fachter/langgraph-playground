@@ -1,21 +1,13 @@
-from typing import Optional
+from typing import Optional, Type
 
-from fastapi import Depends
-from sqlalchemy.orm import Session
-
-from .database import get_db
+from .database import BaseRepository
 from ..entities.user import User
 
 
-class UserRepository:
-    def __init__(self, db: Session = Depends(get_db)):
-        self._db = db
+class UserRepository(BaseRepository[User]):
+
+    def get_type(self) -> Type[User]:
+        return User
 
     def find_one_by_username(self, username) -> Optional[User]:
         return self._db.query(User).filter(User.username == username).one_or_none()
-
-    def insert(self, user: User) -> User:
-        self._db.add(user)
-        self._db.commit()
-        self._db.refresh(user)
-        return user
